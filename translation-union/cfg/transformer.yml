@@ -1,0 +1,16 @@
+training:
+  batch_size: 64
+  learning_rate: 1e-3
+  epochs: 50
+
+model:
+  type: transformer
+  max_seq_len: 128
+  embedding_dim: 128
+  num_heads: 4
+  num_encoder_layers: 2
+  num_decoder_layers: 2
+
+
+work_dir: ./work_dir/transformer
+data_dir: ./data

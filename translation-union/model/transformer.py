@@ -2,7 +2,6 @@ import math
 
 import torch
 from torch import nn
-import config
 
 
 # class PositionEncoding(nn.Module):
@@ -39,7 +38,7 @@ class PositionEncoding(nn.Module):
                 pe[pos, _2i] = math.sin(pos / (10000 ** (_2i / dim_model)))
                 pe[pos, _2i + 1] = math.cos(pos / (10000 ** (_2i / dim_model)))
 
-        self.register_buffer('pe', pe)
+        self.register_buffer("pe", pe)
 
     def forward(self, x):
         # x.shape: [batch_size, seq_len, dim_model]
@@ -49,31 +48,41 @@ class PositionEncoding(nn.Module):
         return x + part_pe
 
 
-class TranslationModel(nn.Module):
-    def __init__(self, zh_vocab_size, en_vocab_size, zh_padding_index, en_padding_index):
+class TranslationTransformerModel(nn.Module):
+    def __init__(
+        self, config, zh_vocab_size, en_vocab_size, zh_padding_index, en_padding_index
+    ):
         super().__init__()
-        self.zh_embedding = nn.Embedding(num_embeddings=zh_vocab_size,
-                                         embedding_dim=config.DIM_MODEL,
-                                         padding_idx=zh_padding_index)
+        embedding_dim = config.embedding_dim
+        num_encoder_layers = config.num_encoder_layers
+        num_decoder_layers = config.num_decoder_layers
+        max_seq_len = config.max_seq_len
+        num_heads = config.num_heads
 
-        self.en_embedding = nn.Embedding(num_embeddings=en_vocab_size,
-                                         embedding_dim=config.DIM_MODEL,
-                                         padding_idx=en_padding_index)
+        self.zh_embedding = nn.Embedding(
+            num_embeddings=zh_vocab_size,
+            embedding_dim=embedding_dim,
+            padding_idx=zh_padding_index,
+        )
+
+        self.en_embedding = nn.Embedding(
+            num_embeddings=en_vocab_size,
+            embedding_dim=embedding_dim,
+            padding_idx=en_padding_index,
+        )
 
         # 位置编码
-        self.position_encoding = PositionEncoding(config.MAX_SEQ_LENGTH, config.DIM_MODEL)
+        self.position_encoding = PositionEncoding(max_seq_len, embedding_dim)
 
-        self.transformer = nn.Transformer(d_model=config.DIM_MODEL,
-                                          nhead=config.NUM_HEADS,
-                                          num_encoder_layers=config.NUM_ENCODER_LAYERS,
-                                          num_decoder_layers=config.NUM_DECODER_LAYERS,
-                                          batch_first=True)
+        self.transformer = nn.Transformer(
+            d_model=embedding_dim,
+            nhead=num_heads,
+            num_encoder_layers=num_encoder_layers,
+            num_decoder_layers=num_decoder_layers,
+            batch_first=True,
+        )
 
-        self.linear = nn.Linear(in_features=config.DIM_MODEL, out_features=en_vocab_size)
-
-    def forward(self, src, tgt, src_pad_mask, tgt_mask):
-        memory = self.encode(src, src_pad_mask)
-        return self.decode(tgt, memory, tgt_mask, src_pad_mask)
+        self.linear = nn.Linear(in_features=embedding_dim, out_features=en_vocab_size)
 
     def encode(self, src, src_pad_mask):
         # src.shape = [batch_size, src_len]
@@ -93,10 +102,68 @@ class TranslationModel(nn.Module):
         embed = self.position_encoding(embed)
         # embed.shape: [batch_size, tgt_len, dim_model]
 
-        output = self.transformer.decoder(tgt=embed, memory=memory,
-                                          tgt_mask=tgt_mask, memory_key_padding_mask=memory_pad_mask)
+        output = self.transformer.decoder(
+            tgt=embed,
+            memory=memory,
+            tgt_mask=tgt_mask,
+            memory_key_padding_mask=memory_pad_mask,
+        )
         # output.shape: [batch_size, tgt_len, dim_model]
 
         outputs = self.linear(output)
         # outputs.shape: [batch_size, tgt_len, en_vocab_size]
         return outputs
+
+    def forward(
+        self,
+        encoder_inputs,
+        decoder_inputs=None,
+        sos_token_index=None,
+        eos_token_index=None,
+        max_length=50,
+    ):
+
+        src_pad_mask = encoder_inputs == self.zh_embedding.padding_idx
+
+        memory = self.encode(encoder_inputs, src_pad_mask)
+
+        if not decoder_inputs is None:
+            tgt_mask = self.transformer.generate_square_subsequent_mask(
+                decoder_inputs.shape[1]
+            )
+            decoder_outputs = self.decode(
+                decoder_inputs, memory, tgt_mask, src_pad_mask
+            )
+            return decoder_outputs
+        else:
+
+            decoder_input = torch.full(
+                [encoder_inputs.shape[0], 1],
+                sos_token_index,
+                device=encoder_inputs.device,
+            )
+
+            batch_size = encoder_inputs.shape[0]
+            device = encoder_inputs.device
+            is_finished = torch.full([batch_size], False, device=device)
+            generated = []
+
+            for i in range(max_length):
+                tgt_mask = self.transformer.generate_square_subsequent_mask(
+                    decoder_input.shape[1]
+                )
+                decoder_output = self.decode(
+                    decoder_input, memory, tgt_mask, src_pad_mask
+                )
+                next_token_indexes = torch.argmax(
+                    decoder_output[:, -1, :], dim=-1, keepdim=True
+                )
+                generated.append(next_token_indexes)
+
+                decoder_input = torch.cat([decoder_input, next_token_indexes], dim=-1)
+
+                is_finished |= next_token_indexes.squeeze(1) == eos_token_index
+                if is_finished.all():
+                    break
+
+            return generated
