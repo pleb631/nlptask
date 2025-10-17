@@ -42,19 +42,48 @@ class TranslationDecoder(nn.Module):
                                 out_features=vocab_size)
 
     def forward(self, x, hidden_0):
-        # x.shape: [batch_size, 1]
-        # hidden.shape: [1, batch_size, hidden_size]
+
         embed = self.embedding(x)
-        # embed.shape: [batch_size, 1, embedding_dim]
         output, hidden_n = self.gru(embed, hidden_0)
-        # output.shape: [batch_size, 1, hidden_size]
         output = self.linear(output)
-        # output.shape: [batch_size, 1, vocab_size]
+
         return output, hidden_n
 
 
-class TranslationModel(nn.Module):
+class TranslationGRUModel(nn.Module):
     def __init__(self, zh_vocab_size, en_vocab_size, zh_padding_index, en_padding_index):
         super().__init__()
         self.encoder = TranslationEncoder(vocab_size=zh_vocab_size, padding_index=zh_padding_index)
         self.decoder = TranslationDecoder(vocab_size=en_vocab_size, padding_index=en_padding_index)
+    
+    def forward(self, encoder_inputs, decoder_inputs=None,sos_token_index=None,eos_token_index=None,max_length=50):
+        # encoder_inputs.shape: [batch_size, src_seq_len]
+        # decoder_inputs.shape: [batch_size, tgt_seq_len]
+        context_vector = self.encoder(encoder_inputs)
+        # context_vector.shape: [batch_size, hidden_size]
+
+        if not decoder_inputs is None:
+            out, _ = self.decoder(decoder_inputs, context_vector.unsqueeze(0))
+            return out
+        else:
+
+            decoder_hidden = context_vector.unsqueeze(0)
+            decoder_input = torch.full([encoder_inputs.shape[0], 1], sos_token_index,
+                                       device=encoder_inputs.device)
+            batch_size = encoder_inputs.shape[0]
+            device = encoder_inputs.device
+            is_finished = torch.full([batch_size], False, device=device)
+            generated = []
+
+            for i in range(max_length):
+                decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
+                next_token_indexes = torch.argmax(decoder_output, dim=-1)
+                generated.append(next_token_indexes)
+
+                decoder_input = next_token_indexes
+
+                is_finished |= (next_token_indexes.squeeze(1) == eos_token_index)
+                if is_finished.all():
+                    break
+
+            return generated

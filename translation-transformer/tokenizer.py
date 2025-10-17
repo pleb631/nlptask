@@ -67,7 +67,7 @@ class EnglishTokenizer(BaseTokenizer):
         return cls.tokenizer.tokenize(text)
 
     def decode(self, indexes):
-        tokens = [self.index2word[index] for index in indexes]
+        tokens = [self.index2word[index] for index in indexes if index not in [self.pad_token_index, self.eos_token_index]]
         return self.detokenizer.detokenize(tokens)
 
 

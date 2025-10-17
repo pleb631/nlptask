@@ -41,7 +41,7 @@ class BaseTokenizer:
                                                                                      token.strip() != '']
         print(f'词表大小:{len(vocab_list)}')
 
-        # 5.保存词表
+        # 保存词表
         with open(vocab_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(vocab_list))
 
@@ -67,14 +67,5 @@ class EnglishTokenizer(BaseTokenizer):
         return cls.tokenizer.tokenize(text)
 
     def decode(self, indexes):
-        tokens = [self.index2word[index] for index in indexes]
+        tokens = [self.index2word[index] for index in indexes if index not in [self.pad_token_index, self.eos_token_index]]
         return self.detokenizer.detokenize(tokens)
-
-
-if __name__ == '__main__':
-    tokenizer = TreebankWordTokenizer()
-    detokenizer = TreebankWordDetokenizer()
-    word_list = tokenizer.tokenize(
-        'On a $50,000 mortgage of 30 years at 8 percent, the monthly payment would be $366.88.')
-    print(word_list)
-    print(detokenizer.detokenize(word_list))

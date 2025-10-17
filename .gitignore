@@ -1,0 +1,6 @@
+*.pt
+*.json
+*/data/*
+*/models/*
+.vscode/
+*.pyc
