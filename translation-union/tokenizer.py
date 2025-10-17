@@ -3,10 +3,10 @@ from tqdm import tqdm
 
 
 class BaseTokenizer:
-    unk_token = '<unk>'
-    pad_token = '<pad>'
-    sos_token = '<sos>'
-    eos_token = '<eos>'
+    unk_token = "<unk>"
+    pad_token = "<pad>"
+    sos_token = "<sos>"
+    eos_token = "<eos>"
 
     def __init__(self, vocab_list):
         self.vocab_list = vocab_list
@@ -37,17 +37,18 @@ class BaseTokenizer:
         for sentence in tqdm(sentences, desc="构建词表"):
             vocab_set.update(cls.tokenize(sentence))
 
-        vocab_list = [cls.pad_token, cls.unk_token, cls.sos_token, cls.eos_token] + [token for token in vocab_set if
-                                                                                     token.strip() != '']
-        print(f'词表大小:{len(vocab_list)}')
+        vocab_list = [cls.pad_token, cls.unk_token, cls.sos_token, cls.eos_token] + [
+            token for token in vocab_set if token.strip() != ""
+        ]
+        print(f"词表大小:{len(vocab_list)}")
 
         # 保存词表
-        with open(vocab_path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(vocab_list))
+        with open(vocab_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(vocab_list))
 
     @classmethod
     def from_vocab(cls, vocab_path):
-        with open(vocab_path, 'r', encoding='utf-8') as f:
+        with open(vocab_path, "r", encoding="utf-8") as f:
             vocab_list = [line.strip() for line in f.readlines()]
         return cls(vocab_list)
 
@@ -67,5 +68,9 @@ class EnglishTokenizer(BaseTokenizer):
         return cls.tokenizer.tokenize(text)
 
     def decode(self, indexes):
-        tokens = [self.index2word[index] for index in indexes if index not in [self.pad_token_index, self.eos_token_index]]
+        tokens = [
+            self.index2word[index]
+            for index in indexes
+            if index not in [self.pad_token_index, self.eos_token_index]
+        ]
         return self.detokenizer.detokenize(tokens)

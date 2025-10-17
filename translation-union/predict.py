@@ -7,7 +7,7 @@ from model import modelBuildFactory
 from tokenizer import ChineseTokenizer, EnglishTokenizer
 
 
-def predict_batch(model, inputs, en_tokenizer,max_seq_len):
+def predict_batch(model, inputs, en_tokenizer, max_seq_len):
     """
     批量预测
     :param model: 模型
@@ -36,7 +36,7 @@ def predict_batch(model, inputs, en_tokenizer,max_seq_len):
         return generated_list
 
 
-def predict(text, model, zh_tokenizer, en_tokenizer, device,max_seq_len):
+def predict(text, model, zh_tokenizer, en_tokenizer, device, max_seq_len):
     # 1. 处理输入
     indexes = zh_tokenizer.encode(text)
     input_tensor = torch.tensor([indexes], dtype=torch.long)
@@ -44,7 +44,7 @@ def predict(text, model, zh_tokenizer, en_tokenizer, device,max_seq_len):
     # input_tensor.shape: [batch_size, seq_len]
 
     # 2.预测逻辑
-    batch_result = predict_batch(model, input_tensor, en_tokenizer,max_seq_len)
+    batch_result = predict_batch(model, input_tensor, en_tokenizer, max_seq_len)
     return en_tokenizer.decode(batch_result[0])
 
 
@@ -80,10 +80,18 @@ def run_predict(cfg_path: str = "cfg/gru.yml"):
             print("请输入内容")
             continue
 
-        result = predict(user_input, model, zh_tokenizer, en_tokenizer, device,max_seq_len=cfg.model.max_seq_len)
+        result = predict(
+            user_input,
+            model,
+            zh_tokenizer,
+            en_tokenizer,
+            device,
+            max_seq_len=cfg.model.max_seq_len,
+        )
         print("英文：", result)
 
 
 if __name__ == "__main__":
     import typer
+
     typer.run(run_predict)

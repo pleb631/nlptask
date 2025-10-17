@@ -43,7 +43,9 @@ def train(cfg_path: Path = "cfg/gru.yml"):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataloader = get_dataloader(config.data_dir, bs=config.training.batch_size, train=True)
+    dataloader = get_dataloader(
+        config.data_dir, bs=config.training.batch_size, train=True
+    )
 
     zh_tokenizer = ChineseTokenizer.from_vocab(Path(config.data_dir) / "zh_vocab.txt")
     en_tokenizer = EnglishTokenizer.from_vocab(Path(config.data_dir) / "en_vocab.txt")
@@ -60,7 +62,9 @@ def train(cfg_path: Path = "cfg/gru.yml"):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.training.learning_rate)
 
-    writer = SummaryWriter(log_dir=Path(config.work_dir) / "logs" / time.strftime("%Y-%m-%d_%H-%M-%S"))
+    writer = SummaryWriter(
+        log_dir=Path(config.work_dir) / "logs" / time.strftime("%Y-%m-%d_%H-%M-%S")
+    )
 
     best_loss = float("inf")
     for epoch in range(1, config.training.epochs + 1):

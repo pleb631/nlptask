@@ -5,13 +5,15 @@ from torch import nn
 class TranslationEncoder(nn.Module):
     def __init__(self, embedding_dim, hidden_size, vocab_size, padding_index):
         super().__init__()
-        self.embedding = nn.Embedding(num_embeddings=vocab_size,
-                                      embedding_dim=embedding_dim,
-                                      padding_idx=padding_index)
+        self.embedding = nn.Embedding(
+            num_embeddings=vocab_size,
+            embedding_dim=embedding_dim,
+            padding_idx=padding_index,
+        )
 
-        self.gru = nn.GRU(input_size=embedding_dim,
-                          hidden_size=hidden_size,
-                          batch_first=True)
+        self.gru = nn.GRU(
+            input_size=embedding_dim, hidden_size=hidden_size, batch_first=True
+        )
 
     def forward(self, x):
         # x.shape: [batch_size, seq_len]
@@ -29,16 +31,17 @@ class TranslationEncoder(nn.Module):
 class TranslationDecoder(nn.Module):
     def __init__(self, embedding_dim, hidden_size, vocab_size, padding_index):
         super().__init__()
-        self.embedding = nn.Embedding(num_embeddings=vocab_size,
-                                      embedding_dim=embedding_dim,
-                                      padding_idx=padding_index)
+        self.embedding = nn.Embedding(
+            num_embeddings=vocab_size,
+            embedding_dim=embedding_dim,
+            padding_idx=padding_index,
+        )
 
-        self.gru = nn.GRU(input_size=embedding_dim,
-                          hidden_size=hidden_size,
-                          batch_first=True)
+        self.gru = nn.GRU(
+            input_size=embedding_dim, hidden_size=hidden_size, batch_first=True
+        )
 
-        self.linear = nn.Linear(in_features=hidden_size,
-                                out_features=vocab_size)
+        self.linear = nn.Linear(in_features=hidden_size, out_features=vocab_size)
 
     def forward(self, x, hidden_0):
 
@@ -50,12 +53,31 @@ class TranslationDecoder(nn.Module):
 
 
 class TranslationGRUModel(nn.Module):
-    def __init__(self, config, zh_vocab_size, en_vocab_size, zh_padding_index, en_padding_index):
+    def __init__(
+        self, config, zh_vocab_size, en_vocab_size, zh_padding_index, en_padding_index
+    ):
         super().__init__()
-        self.encoder = TranslationEncoder(embedding_dim=config.embedding_dim, hidden_size=config.hidden_size, vocab_size=zh_vocab_size, padding_index=zh_padding_index)
-        self.decoder = TranslationDecoder(embedding_dim=config.embedding_dim, hidden_size=config.hidden_size, vocab_size=en_vocab_size, padding_index=en_padding_index)
+        self.encoder = TranslationEncoder(
+            embedding_dim=config.embedding_dim,
+            hidden_size=config.hidden_size,
+            vocab_size=zh_vocab_size,
+            padding_index=zh_padding_index,
+        )
+        self.decoder = TranslationDecoder(
+            embedding_dim=config.embedding_dim,
+            hidden_size=config.hidden_size,
+            vocab_size=en_vocab_size,
+            padding_index=en_padding_index,
+        )
 
-    def forward(self, encoder_inputs, decoder_inputs=None,sos_token_index=None,eos_token_index=None,max_length=50):
+    def forward(
+        self,
+        encoder_inputs,
+        decoder_inputs=None,
+        sos_token_index=None,
+        eos_token_index=None,
+        max_length=50,
+    ):
         # encoder_inputs.shape: [batch_size, src_seq_len]
         # decoder_inputs.shape: [batch_size, tgt_seq_len]
         context_vector = self.encoder(encoder_inputs)
@@ -67,21 +89,26 @@ class TranslationGRUModel(nn.Module):
         else:
 
             decoder_hidden = context_vector.unsqueeze(0)
-            decoder_input = torch.full([encoder_inputs.shape[0], 1], sos_token_index,
-                                       device=encoder_inputs.device)
+            decoder_input = torch.full(
+                [encoder_inputs.shape[0], 1],
+                sos_token_index,
+                device=encoder_inputs.device,
+            )
             batch_size = encoder_inputs.shape[0]
             device = encoder_inputs.device
             is_finished = torch.full([batch_size], False, device=device)
             generated = []
 
             for i in range(max_length):
-                decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
+                decoder_output, decoder_hidden = self.decoder(
+                    decoder_input, decoder_hidden
+                )
                 next_token_indexes = torch.argmax(decoder_output, dim=-1)
                 generated.append(next_token_indexes)
 
                 decoder_input = next_token_indexes
 
-                is_finished |= (next_token_indexes.squeeze(1) == eos_token_index)
+                is_finished |= next_token_indexes.squeeze(1) == eos_token_index
                 if is_finished.all():
                     break
 
