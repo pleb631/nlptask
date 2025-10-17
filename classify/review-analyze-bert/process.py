@@ -1,4 +1,3 @@
-import pandas as pd
 from datasets import load_dataset, ClassLabel
 from transformers import AutoTokenizer
 

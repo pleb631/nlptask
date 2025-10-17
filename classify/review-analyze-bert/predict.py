@@ -1,10 +1,8 @@
-import jieba
 import torch
 from transformers import AutoTokenizer
 
 import config
 from model import ReviewAnalyzeModel
-from tokenizer import JiebaTokenizer
 
 
 def predict_batch(model, inputs):
