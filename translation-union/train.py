@@ -6,8 +6,10 @@ from tqdm import tqdm
 
 from dataset import get_dataloader
 from tokenizer import ChineseTokenizer, EnglishTokenizer
-import config
+from omegaconf import OmegaConf
 from model import modelBuildFactory
+import typer
+from pathlib import Path
 
 
 def train_one_epoch(model, dataloader, loss_fn, optimizer, device):
@@ -36,17 +38,18 @@ def train_one_epoch(model, dataloader, loss_fn, optimizer, device):
     return total_loss / len(dataloader)
 
 
-def train():
+def train(cfg_path: Path = "cfg/gru.yml"):
+    config = OmegaConf.load(cfg_path)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataloader = get_dataloader()
+    dataloader = get_dataloader(config.data_dir, bs=config.training.batch_size, train=True)
 
-    zh_tokenizer = ChineseTokenizer.from_vocab(config.MODELS_DIR / "zh_vocab.txt")
-    en_tokenizer = EnglishTokenizer.from_vocab(config.MODELS_DIR / "en_vocab.txt")
+    zh_tokenizer = ChineseTokenizer.from_vocab(Path(config.data_dir) / "zh_vocab.txt")
+    en_tokenizer = EnglishTokenizer.from_vocab(Path(config.data_dir) / "en_vocab.txt")
 
     model = modelBuildFactory(
-        type=config.MODEL_TYPE,
+        config=config.model,
         zh_vocab_size=zh_tokenizer.vocab_size,
         en_vocab_size=en_tokenizer.vocab_size,
         zh_padding_index=zh_tokenizer.pad_token_index,
@@ -55,12 +58,12 @@ def train():
 
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=en_tokenizer.pad_token_index)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.training.learning_rate)
 
-    writer = SummaryWriter(log_dir=config.LOGS_DIR / time.strftime("%Y-%m-%d_%H-%M-%S"))
+    writer = SummaryWriter(log_dir=Path(config.work_dir) / "logs" / time.strftime("%Y-%m-%d_%H-%M-%S"))
 
     best_loss = float("inf")
-    for epoch in range(1, config.EPOCHS + 1):
+    for epoch in range(1, config.training.epochs + 1):
         print(f"========== Epoch {epoch} ==========")
         loss = train_one_epoch(model, dataloader, loss_fn, optimizer, device)
         print(f"Loss: {loss:.4f}")
@@ -71,11 +74,11 @@ def train():
         # 保存模型
         if loss < best_loss:
             best_loss = loss
-            torch.save(model.state_dict(), config.MODELS_DIR / "best.pt")
+            torch.save(model.state_dict(), Path(config.work_dir) / "best.pt")
             print("保存模型")
 
     writer.close()
 
 
 if __name__ == "__main__":
-    train()
+    typer.run(train)

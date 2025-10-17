@@ -4,3 +4,5 @@
 */models/*
 .vscode/
 *.pyc
+*.ipynb_checkpoints
+**/logs

@@ -1,17 +1,16 @@
 import torch
 from torch import nn
-import config
 
 
 class TranslationEncoder(nn.Module):
-    def __init__(self, vocab_size, padding_index):
+    def __init__(self, embedding_dim, hidden_size, vocab_size, padding_index):
         super().__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size,
-                                      embedding_dim=config.EMBEDDING_DIM,
+                                      embedding_dim=embedding_dim,
                                       padding_idx=padding_index)
 
-        self.gru = nn.GRU(input_size=config.EMBEDDING_DIM,
-                          hidden_size=config.HIDDEN_SIZE,
+        self.gru = nn.GRU(input_size=embedding_dim,
+                          hidden_size=hidden_size,
                           batch_first=True)
 
     def forward(self, x):
@@ -28,17 +27,17 @@ class TranslationEncoder(nn.Module):
 
 
 class TranslationDecoder(nn.Module):
-    def __init__(self, vocab_size, padding_index):
+    def __init__(self, embedding_dim, hidden_size, vocab_size, padding_index):
         super().__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size,
-                                      embedding_dim=config.EMBEDDING_DIM,
+                                      embedding_dim=embedding_dim,
                                       padding_idx=padding_index)
 
-        self.gru = nn.GRU(input_size=config.EMBEDDING_DIM,
-                          hidden_size=config.HIDDEN_SIZE,
+        self.gru = nn.GRU(input_size=embedding_dim,
+                          hidden_size=hidden_size,
                           batch_first=True)
 
-        self.linear = nn.Linear(in_features=config.HIDDEN_SIZE,
+        self.linear = nn.Linear(in_features=hidden_size,
                                 out_features=vocab_size)
 
     def forward(self, x, hidden_0):
@@ -51,11 +50,11 @@ class TranslationDecoder(nn.Module):
 
 
 class TranslationGRUModel(nn.Module):
-    def __init__(self, zh_vocab_size, en_vocab_size, zh_padding_index, en_padding_index):
+    def __init__(self, config, zh_vocab_size, en_vocab_size, zh_padding_index, en_padding_index):
         super().__init__()
-        self.encoder = TranslationEncoder(vocab_size=zh_vocab_size, padding_index=zh_padding_index)
-        self.decoder = TranslationDecoder(vocab_size=en_vocab_size, padding_index=en_padding_index)
-    
+        self.encoder = TranslationEncoder(embedding_dim=config.embedding_dim, hidden_size=config.hidden_size, vocab_size=zh_vocab_size, padding_index=zh_padding_index)
+        self.decoder = TranslationDecoder(embedding_dim=config.embedding_dim, hidden_size=config.hidden_size, vocab_size=en_vocab_size, padding_index=en_padding_index)
+
     def forward(self, encoder_inputs, decoder_inputs=None,sos_token_index=None,eos_token_index=None,max_length=50):
         # encoder_inputs.shape: [batch_size, src_seq_len]
         # decoder_inputs.shape: [batch_size, tgt_seq_len]
