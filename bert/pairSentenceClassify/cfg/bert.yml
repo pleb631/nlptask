@@ -1,0 +1,17 @@
+model:
+  type: transformer
+  backbone: google-bert/bert-base-uncased
+  cache_dir: ./work_dir/cache
+  seq_len: 256
+  hidden_dim: 768
+  dropout_rate: 0.1
+  class_num: 3
+
+train:
+  batch_size: 16
+  learning_rate: 3.5e-5
+  epochs: 10
+
+
+work_dir: ./work_dir/transformer
+data_dir: ./data

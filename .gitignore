@@ -1,0 +1,12 @@
+*.pt
+*.json
+*.jsonl
+*.txt
+*/data/*
+*/models/*
+.vscode/
+*.pyc
+*.ipynb_checkpoints
+**/logs
+**/work_dir
+*.arrow

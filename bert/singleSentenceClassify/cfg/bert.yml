@@ -1,0 +1,17 @@
+model:
+  type: transformer
+  backbone: google-bert/bert-base-chinese
+  cache_dir: ./work_dir/cache
+  seq_len: 512
+  hidden_dim: 768
+  dropout_rate: 0.1
+  class_num: 2
+
+train:
+  batch_size: 16
+  learning_rate: 1e-5
+  epochs: 20
+
+
+work_dir: ./work_dir/transformer
+data_dir: ./data
