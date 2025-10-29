@@ -16,11 +16,10 @@ class transformer(nn.Module):
         # shape: [batch_size, seq_len]
         output = self.bert(input_ids, attention_mask, token_type_ids)
 
-        last_hidden_state = output.last_hidden_state
+        cls_hidden_state = output.last_hidden_state
 
-        cls_hidden_state = last_hidden_state[:, 0, :]
         cls_hidden_state = self.dropout(cls_hidden_state)
-        output = self.linear(cls_hidden_state).squeeze(-1)
+        output = self.linear(cls_hidden_state)
         return output
 
 

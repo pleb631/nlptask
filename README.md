@@ -5,6 +5,7 @@
   - **singleSentenceClassify**：对单个句子进行分类，如判断情感或主题。
   - **pairSentenceClassify**：对句子对进行分类，如判断两句是否语义相似或存在蕴含关系。
   - **multipleChoice**：在多个候选选项中选择最符合题意的答案，常用于阅读理解或问答任务。
+  - **ChineseNER**: 中文命名实体识别，如人名、地名、机构名等。
 
 - gru部分为nlp经典技术
 

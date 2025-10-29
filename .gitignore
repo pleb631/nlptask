@@ -2,7 +2,7 @@
 *.json
 *.jsonl
 *.txt
-*/data/*
+**/data/*
 */models/*
 .vscode/
 *.pyc
